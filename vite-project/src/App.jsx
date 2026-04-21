@@ -2427,6 +2427,55 @@ function MLPView({ onNavigate }) {
     }, delay);
   }, [stopVizTimer]);
 
+
+  const [colNames, setColNames] = useState(['Study Hours', 'Attendance', 'Pass?']);
+
+  const handleDownload = () => {
+    const header = colNames.join(',');
+    const csvContent = "data:text/csv;charset=utf-8," + header + "\n" + data.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "mlp_data.csv");
+    document.body.appendChild(link);
+    link.click();
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return;
+      
+      const newColNames = lines[0].split(',').map(s => s.trim());
+      if (newColNames.length !== 3) {
+        alert("MLP Dataset must have exactly 3 columns (e.g. Feature1, Feature2, Class)");
+        return;
+      }
+      setColNames(newColNames);
+
+      const parsedData = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const cols = lines[i].split(',');
+        if (cols.length === 3) {
+          const numCols = cols.map(c => parseFloat(c));
+          if (!numCols.some(isNaN)) {
+            parsedData.push(numCols);
+          }
+        }
+      }
+      
+      if (parsedData.length > 0) {
+        setData(parsedData);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const initialData = [
     [2, 50, 0],
     [3, 60, 0],
