@@ -2388,7 +2388,7 @@ function MLPView({ onNavigate }) {
   const [results, setResults] = useState(null);
 
   // Dynamic column names — updated when CSV is uploaded
-  const [colNames, setColNames] = useState(['Study Hours', 'Attendance', 'Pass?']);
+  
 
   const [testHours, setTestHours] = useState('');
   const [testAttendance, setTestAttendance] = useState('');
@@ -2498,52 +2498,6 @@ function MLPView({ onNavigate }) {
     }
   };
 
-  const handleDownload = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + colNames.join(',') + "\n" + data.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "mlp_data.csv");
-    document.body.appendChild(link);
-    link.click();
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target.result;
-      const lines = text.split('\n').filter(l => l.trim() !== '');
-      if (lines.length < 2) return;
-
-      const headers = lines[0].split(',').map(h => h.trim());
-      if (headers.length >= 3) {
-        setColNames([headers[0], headers[1], headers[2]]);
-      }
-
-      const parsedData = [];
-      for (let i = 1; i < lines.length; i++) { // skip header
-        const parts = lines[i].split(',');
-        if (parts.length >= 3) {
-          const v1 = parseFloat(parts[0]);
-          const v2 = parseFloat(parts[1]);
-          const label = parseInt(parts[2]);
-          if (!isNaN(v1) && !isNaN(v2) && !isNaN(label)) {
-            parsedData.push([v1, v2, label]);
-          }
-        }
-      }
-      if (parsedData.length > 0) {
-        setData(parsedData);
-        setResults(null);
-        setTestResult(null);
-        setTestHours('');
-        setTestAttendance('');
-      }
-    };
-    reader.readAsText(file);
-  };
 
   const renderGraph = () => {
     if (!results || !results.loss_per_epoch || results.loss_per_epoch.length === 0) return null;
@@ -2607,9 +2561,9 @@ function MLPView({ onNavigate }) {
                 <thead className="bg-slate-50 text-slate-700 sticky top-0">
                   <tr>
                     <th className="px-3 py-2 font-semibold text-slate-400 w-8">#</th>
-                    <th className="px-4 py-2 font-semibold">{colNames[0]}</th>
-                    <th className="px-4 py-2 font-semibold">{colNames[1]}</th>
-                    <th className="px-4 py-2 font-semibold">{colNames[2]}</th>
+                    <th className="px-4 py-2 font-semibold">Pixel Width</th>
+                    <th className="px-4 py-2 font-semibold">Pixel Height</th>
+                    <th className="px-4 py-2 font-semibold">Class</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2709,12 +2663,12 @@ function MLPView({ onNavigate }) {
                   <h3 className="mb-3 text-lg font-bold text-slate-900">Test Your Input</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-slate-700">{colNames[0]}</label>
-                      <input type="number" step="0.1" value={testHours} onChange={e => setTestHours(e.target.value)} placeholder={`Enter ${colNames[0]}`} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition" />
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Pixel Width</label>
+                      <input type="number" step="0.1" value={testHours} onChange={e => setTestHours(e.target.value)} placeholder={`Enter $Pixel Width`} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition" />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-slate-700">{colNames[1]}</label>
-                      <input type="number" step="0.1" value={testAttendance} onChange={e => setTestAttendance(e.target.value)} placeholder={`Enter ${colNames[1]}`} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition" />
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Pixel Height</label>
+                      <input type="number" step="0.1" value={testAttendance} onChange={e => setTestAttendance(e.target.value)} placeholder={`Enter $Pixel Height`} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition" />
                     </div>
                   </div>
                   <button onClick={handleManualPredict} disabled={testLoading} className="w-full rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 font-bold text-white shadow-md hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 transition">
@@ -2722,7 +2676,7 @@ function MLPView({ onNavigate }) {
                   </button>
                   {testResult && !testResult.error && (
                     <div className={`mt-4 rounded-lg p-3 text-center border font-bold flex justify-between items-center ${testResult.prediction === 'Pass' || testResult.prediction === 1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                      <span className="text-sm">Result: {colNames[2]} = {testResult.prediction === 'Pass' || testResult.prediction === 1 ? '1 ✅' : '0 ❌'}</span>
+                      <span className="text-sm">Result: Class = {testResult.prediction === 'Pass' || testResult.prediction === 1 ? '1 ✅' : '0 ❌'}</span>
                       <span className="text-xs uppercase tracking-wide opacity-80">Confidence: {(testResult.confidence * 100).toFixed(1)}%</span>
                     </div>
                   )}
